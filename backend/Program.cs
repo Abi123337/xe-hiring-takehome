@@ -2,7 +2,7 @@ using RateAlerts.Api.BackGroundService;
 using RateAlerts.Api.Interfaces;
 using RateAlerts.Api.Repositories;
 using RateAlerts.Api.Services;
-using static RateAlerts.Api.Interfaces.IRateXEService;
+using static RateAlerts.Api.Interfaces.IXeRateService;
 
 var builder = WebApplication.CreateBuilder(args);
 

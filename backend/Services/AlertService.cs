@@ -1,6 +1,6 @@
 ﻿using RateAlerts.Api.Interfaces;
 using RateAlerts.Api.Models;
-using static RateAlerts.Api.Interfaces.IRateXEService;
+using static RateAlerts.Api.Interfaces.IXeRateService;
 
 namespace RateAlerts.Api.Services
 {

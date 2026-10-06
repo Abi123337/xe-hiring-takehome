@@ -3,7 +3,7 @@ using Moq;
 using RateAlerts.Api.Interfaces;
 using RateAlerts.Api.Models;
 using RateAlerts.Api.Services;
-using static RateAlerts.Api.Interfaces.IRateXEService;
+using static RateAlerts.Api.Interfaces.IXeRateService;
 
 namespace RateAlertsTests
 {

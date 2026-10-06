@@ -3,7 +3,7 @@ using RateAlerts.Api.Models;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using static RateAlerts.Api.Interfaces.IRateXEService;
+using static RateAlerts.Api.Interfaces.IXeRateService;
 
 namespace RateAlerts.Api.Services
 {
