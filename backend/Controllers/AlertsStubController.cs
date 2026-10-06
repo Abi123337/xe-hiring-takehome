@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-
+using RateAlerts.Api.Interfaces;
+using RateAlerts.Api.Models;
 namespace RateAlerts.Api.Controllers;
 
 // =====================================================================================
@@ -18,6 +19,12 @@ namespace RateAlerts.Api.Controllers;
 [Route("api/alerts")]
 public class AlertsStubController : ControllerBase
 {
+    private readonly IAlertService _alertService;
+
+    public AlertsStubController(IAlertService alertService)
+    {
+        _alertService = alertService;
+    }
     private static readonly Dictionary<string, decimal> CannedRates = new()
     {
         ["USD/CAD"] = 1.3650m,
@@ -25,67 +32,73 @@ public class AlertsStubController : ControllerBase
         ["EUR/USD"] = 1.0830m,
     };
 
-    private static readonly List<Alert> Alerts = new();
-    private static readonly Lock Sync = new();
+   
 
     [HttpGet]
-    public IActionResult List()
+    public async Task<IActionResult> ListAsync()
     {
-        lock (Sync)
-        {
-            var view = Alerts
-                .Select(a => new
-                {
-                    a.Id,
-                    a.Pair,
-                    a.Threshold,
-                    a.Direction,
-                    Triggered = IsTriggered(a),
-                })
-                .ToList();
-            return Ok(view);
-        }
+       
+            var userId = GetUserId();
+
+            var alerts =  await _alertService.GetAllAsync(
+                userId);
+
+            return Ok(alerts);
+        
     }
 
     [HttpPost]
-    public IActionResult Create([FromBody] CreateAlertRequest request)
+    public async Task<IActionResult> CreateAsync([FromBody] CreateRateAlertRequest request)
     {
         if (!CannedRates.ContainsKey(request.Pair))
         {
             return BadRequest(new { error = $"Unknown pair '{request.Pair}'. The stub supports: {string.Join(", ", CannedRates.Keys)}." });
         }
 
-        if (request.Direction is not ("above" or "below"))
+        if (request.Direction is not (AlertDirection.Above or AlertDirection.Below))
         {
-            return BadRequest(new { error = "Direction must be 'above' or 'below'." });
+            return BadRequest(new { error = "Direction must be 'Above' or 'Below'." });
         }
+        var userId = GetUserId();
 
-        var alert = new Alert(Guid.NewGuid(), request.Pair, request.Threshold, request.Direction);
-        lock (Sync)
-        {
-            Alerts.Add(alert);
-        }
+        var alert = await _alertService.CreateAsync(
+            userId,
+            request);
 
-        return CreatedAtAction(nameof(List), new { alert.Id, alert.Pair, alert.Threshold, alert.Direction, Triggered = IsTriggered(alert) });
+       
+        return CreatedAtAction(nameof(ListAsync),alert);
     }
 
     [HttpDelete("{id:guid}")]
-    public IActionResult Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id)
     {
-        lock (Sync)
-        {
-            var removed = Alerts.RemoveAll(a => a.Id == id);
-            return removed > 0 ? NoContent() : NotFound();
-        }
+       
+            var userId = GetUserId();
+
+            var deleted = await _alertService.DeleteAsync(
+                id,
+                userId);
+            if (!deleted)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        
     }
 
-    private static bool IsTriggered(Alert alert)
+   
+
+    //public record Alert(Guid Id, string Pair, decimal Threshold, string Direction);
+
+    /// <summary>
+    /// /public record CreateAlertRequest(string Pair, decimal Threshold, string Direction);
+    /// </summary>
+    /// <returns></returns>
+    private string GetUserId()
     {
-        var rate = CannedRates[alert.Pair];
-        return alert.Direction == "above" ? rate > alert.Threshold : rate < alert.Threshold;
+        // Replace this with the authenticated user's ID
+        // when authentication is configured.
+        return User.Identity?.Name ?? "demouser";
     }
-
-    public record Alert(Guid Id, string Pair, decimal Threshold, string Direction);
-
-    public record CreateAlertRequest(string Pair, decimal Threshold, string Direction);
 }
